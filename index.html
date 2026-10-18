@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>复合空间箱子最优排布计算器（多功能版）</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 950px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
+        /* 顶部选项卡样式 */
+        .tab-header {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 15px;
+        }
+        .tab-btn {
+            background-color: #e0e0e0;
+            color: #555;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tab-btn.active {
+            background-color: #3498db;
+            color: white;
+            box-shadow: 0 2px 6px rgba(52, 152, 219, 0.4);
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .section-title {
+            font-size: 1.1rem;
+            color: #2980b9;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 5px;
+            margin-top: 20px;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+            color: #555;
+        }
+        label span {
+            font-weight: normal;
+            font-size: 0.8rem;
+            color: #888;
+        }
+        input {
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+        input:focus {
+            border-color: #3498db;
+            outline: none;
+            box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+        }
+        .btn-container {
+            text-align: center;
+            margin-top: 25px;
+        }
+        button.action-btn {
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button.action-btn:hover {
+            background-color: #219653;
+        }
+        .result-box {
+            margin-top: 30px;
+            background: #ecf0f1;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        .result-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            font-size: 1rem;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            background: #fff;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 10px 15px;
+            text-align: center;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 0.95rem;
+        }
+        th {
+            background-color: #34495e;
+            color: white;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>复合空间箱子最优排布计算器</h1>
+    <div class="subtitle">严格按行排布约束下的全局最大容量优化工具</div>
+
+    <!-- 顶部切换选项卡 -->
+    <div class="tab-header">
+        <button class="tab-btn active" onclick="switchTab(1)">模式一：单箱型全空间排布</button>
+        <button class="tab-btn" onclick="switchTab(2)">模式二：两箱型区块限制混排</button>
+    </div>
+
+    <!-- ==================== 模式一：单箱型计算页面 ==================== -->
+    <div id="tab1" class="tab-content active">
+        <div class="subtitle" style="color: #2980b9; font-weight: bold;">单箱型排布计算（固定长高，自动寻找最佳对齐偏移量）</div>
+
+        <div class="section-title">1. 空间结构参数（从下到上）</div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="t1_H_rect">底部矩形高度 (H_rect) <span>(例如: 10.0)</span></label>
+                <input type="number" id="t1_H_rect" value="10.0" step="0.1">
+            </div>
+            <div class="form-group">
+                <label for="t1_W0">底部最大底宽 (W0) <span>(例如: 25.2)</span></label>
+                <input type="number" id="t1_W0" value="25.2" step="0.1">
+            </div>
+            <div class="form-group">
+                <label for="t1_H1">第一个梯形高度 (H1) <span>(例如: 6.0)</span></label>
+                <input type="number" id="t1_H1" value="6.0" step="0.1">
+            </div>
+            <div class="form-group">
+                <label for="t1_W1">第一个梯形顶宽 (W1) <span>(例如: 10.8)</span></label>
+                <input type="number" id="t1_W1" value="10.8" step="0.1">
+            </div>
+            <div class="form-group">
+                <label for="t1_H2">第二个梯形高度 (H2) <span>(例如: 7.8)</span></label>
+                <input type="number" id="t1_H2" value="7.8" step="0.1">
+            </div>
+            <div class="form-group">
+                <label for="t1_W2">第二个梯形顶宽 (W2) <span>(例如: 5.3)</span></label>
+                <input type="number" id="t1_W2" value="5.3" step="0.1">
+            </div>
+        </div>
+
+        <div class="section-title">2. 单箱子尺寸参数</div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="t1_box_l">箱子长度 (box_l) <span>(例如: 1.4)</span></label>
+                <input type="number" id="t1_box_l" value="1.4" step="0.1">
+            </div>
+            <div class="form-group">
+                <label for="t1_box_h">箱子高度 (box_h) <span>(例如: 1.5)</span></label>
+                <input type="number" id="t1_box_h" value="1.5" step="0.1">
+            </div>
+        </div>
+
+        <div class="btn-container">
+            <button class="action-btn" onclick="calculateTab1()">计算单箱型最优排布</button>
+        </div>
+
+        <div class="result-box" id="t1_resultBox" style="display: none;">
+            <div class="section-title" style="margin-top: 0;">计算结果摘要</div>
+            <div class="result-summary">
+                <div>最大总箱数: <span id="t1_resTotal" style="color: #c0392b;">0</span> 个</div>
+                <div>最佳偏移量 (y0): <span id="t1_resY0">0.00</span></div>
+                <div>总行数: <span id="t1_resRows">0</span> 行</div>
+            </div>
+            <div class="section-title">每行排布明细详情</div>
+            <div style="max-height: 350px; overflow-y: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>行号</th>
+                            <th>高度区间 (Y 范围)</th>
+                            <th>该行最小宽度</th>
+                            <th>本行可放箱数</th>
+                        </tr>
+                    </thead>
+                    <tbody id="t1_tbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 模式二：两箱型区块混排页面 ==================== -->
+    <div id="tab2" class="tab-content">
+        <div class="subtitle" style="color: #2980b9; font-weight: bold;">多箱型区块混排（仅允许 1, 2, 1-2, 2-1, 1-2-1, 2-1-2 模式）</div>
+
+        <div class="section-title">1. 空间结构参数（从下到上）</div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="t2_H_rect">底部矩形高度 (H_rect) <span>(例如: 10.0)</span></label>
+                <input type="number" id="t2_H_rect" value="10.0" step="0.1">
+            </div>
+            <div class="form-group">
+                <label for="t2_W0">底部最大底宽 (W0) <span>(例如: 25.2)</span></label>
+                <input type="number" id="t2_W0" value="25.2" step="0.1">
+            </div>
+            <div class="form-group">
+                <label for="t2_H1">第一个梯形高度 (H1) <span>(例如: 6.0)</span></label>
+                <input type="number" id="t2_H1" value="6.0" step="0.1">
+            </div>
+            <div class="form-group">
+                <label for="t2_W1">第一个梯形顶宽 (W1) <span>(例如: 10.8)</span></label>
+                <input type="number" id="t2_W1" value="10.8" step="0.1">
+            </div>
+            <div class="form-group">
+                <label for="t2_H2">第二个梯形高度 (H2) <span>(例如: 7.8)</span></label>
+                <input type="number" id="t2_H2" value="7.8" step="0.1">
+            </div>
+            <div class="form-group">
+                <label for="t2_W2">第二个梯形顶宽 (W2) <span>(例如: 5.3)</span></label>
+                <input type="number" id="t2_W2" value="5.3" step="0.1">
+            </div>
+        </div>
+
+        <div class="section-title">2. 两种箱子尺寸参数</div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="t2_box1_l">箱子 1 长度 <span>(例如: 1.4)</span></label>
+                <input type="number" id="t2_box1_l" value="1.4" step="0.1">
+            </div>
+            <div class="form-group">
+                <label for="t2_box1_h">箱子 1 高度 <span>(例如: 1.5)</span></label>
+                <input type="number" id="t2_box1_h" value="1.5" step="0.1">
+            </div>
+            <div class="form-group">
+                <label for="t2_box2_l">箱子 2 长度 <span>(例如: 1.3)</span></label>
+                <input type="number" id="t2_box2_l" value="1.3" step="0.1">
+            </div>
+            <div class="form-group">
+                <label for="t2_box2_h">箱子 2 高度 <span>(例如: 1.6)</span></label>
+                <input type="number" id="t2_box2_h" value="1.6" step="0.1">
+            </div>
+        </div>
+
+        <div class="btn-container">
+            <button class="action-btn" onclick="calculateTab2()">计算区块混排最优解</button>
+        </div>
+
+        <div class="result-box" id="t2_resultBox" style="display: none;">
+            <div class="section-title" style="margin-top: 0;">最优排布方案摘要</div>
+            <div class="result-summary">
+                <div>最大总箱数: <span id="t2_resTotal" style="color: #c0392b;">0</span> 个</div>
+                <div>最佳偏移量 (y0): <span id="t2_resY0">0.00</span></div>
+                <div style="grid-column: 1 / -1;">混排模式: <span id="t2_resPattern" style="color: #2980b9;">-</span></div>
+            </div>
+            <div class="section-title">详细行排布明细</div>
+            <div style="max-height: 350px; overflow-y: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>行号</th>
+                            <th>高度区间 (Y 范围)</th>
+                            <th>使用箱型</th>
+                            <th>该行最小宽度</th>
+                            <th>本行箱数</th>
+                        </tr>
+                    </thead>
+                    <tbody id="t2_tbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+// 选项卡切换控制
+function switchTab(tabNum) {
+    document.querySelectorAll('.tab-btn').forEach((btn, idx) => {
+        btn.classList.toggle('active', idx + 1 === tabNum);
+    });
+    document.querySelectorAll('.tab-content').forEach((content, idx) => {
+        content.classList.toggle('active', idx + 1 === tabNum);
+    });
+}
+
+// 统一的复合空间宽度计算函数
+function getSpaceWidth(y, H_rect, W0, H1, W1, H2, W2) {
+    let H_total = H_rect + H1 + H2;
+    if (y < 0 || y > H_total) return 0.0;
+    if (y <= H_rect) {
+        return W0;
+    } else if (y <= H_rect + H1) {
+        let y_rel = y - H_rect;
+        return H1 === 0 ? W1 : W0 + (W1 - W0) * (y_rel / H1);
+    } else {
+        let y_rel = y - (H_rect + H1);
+        return H2 === 0 ? W2 : W1 + (W2 - W1) * (y_rel / H2);
+    }
+}
+
+// ==================== 模式一逻辑 ====================
+function calculateTab1() {
+    let H_rect = parseFloat(document.getElementById('t1_H_rect').value);
+    let W0 = parseFloat(document.getElementById('t1_W0').value);
+    let H1 = parseFloat(document.getElementById('t1_H1').value);
+    let W1 = parseFloat(document.getElementById('t1_W1').value);
+    let H2 = parseFloat(document.getElementById('t1_H2').value);
+    let W2 = parseFloat(document.getElementById('t1_W2').value);
+    let box_l = parseFloat(document.getElementById('t1_box_l').value);
+    let box_h = parseFloat(document.getElementById('t1_box_h').value);
+
+    if ([H_rect, W0, H1, W1, H2, W2, box_l, box_h].some(isNaN)) {
+        alert("请填写所有有效的数字参数！");
+        return;
+    }
+
+    let H_total = H_rect + H1 + H2;
+    let breakpoints = [0.0, H_rect, H_rect + H1, H_total];
+    let candidate_y0 = new Set([0.0]);
+    for (let bp of breakpoints) {
+        candidate_y0.add(bp % box_h);
+    }
+    for (let i = 0; i < 100; i++) {
+        candidate_y0.add((i / 100.0) * box_h);
+    }
+
+    let best_total = -1;
+    let best_y0 = 0.0;
+    let best_details = [];
+
+    for (let y0 of candidate_y0) {
+        let max_rows = Math.floor((H_total - y0) / box_h);
+        if (max_rows <= 0) continue;
+
+        let total_boxes = 0;
+        let row_details = [];
+        let valid = true;
+
+        for (let j = 0; j < max_rows; j++) {
+            let y_bottom = y0 + j * box_h;
+            let y_top = y0 + (j + 1) * box_h;
+
+            let test_y = [y_bottom, y_top];
+            for (let bp of breakpoints) {
+                if (y_bottom < bp && bp < y_top) test_y.push(bp);
+            }
+
+            let min_width = Infinity;
+            for (let y of test_y) {
+                let w = getSpaceWidth(y, H_rect, W0, H1, W1, H2, W2);
+                if (w < min_width) min_width = w;
+            }
+
+            let boxes_in_row = Math.floor(min_width / box_l);
+            total_boxes += boxes_in_row;
+            row_details.push({
+                row: j + 1,
+                y_range: `${y_bottom.toFixed(2)} ~ ${y_top.toFixed(2)}`,
+                min_width: min_width.toFixed(2),
+                boxes_in_row: boxes_in_row
+            });
+        }
+
+        if (total_boxes > best_total) {
+            best_total = total_boxes;
+            best_y0 = y0;
+            best_details = row_details;
+        }
+    }
+
+    document.getElementById('t1_resTotal').innerText = best_total;
+    document.getElementById('t1_resY0').innerText = best_y0.toFixed(4);
+    document.getElementById('t1_resRows').innerText = best_details.length;
+
+    let tbody = document.getElementById('t1_tbody');
+    tbody.innerHTML = '';
+    for (let d of best_details) {
+        let tr = document.createElement('tr');
+        tr.innerHTML = `<td>${d.row}</td><td>${d.y_range}</td><td>${d.min_width}</td><td><strong>${d.boxes_in_row}</strong></td>`;
+        tbody.appendChild(tr);
+    }
+    document.getElementById('t1_resultBox').style.display = 'block';
+}
+
+// ==================== 模式二逻辑 ====================
+function evaluateBlockSequence(y0, patternBoxes, rowCounts, H_rect, W0, H1, W1, H2, W2) {
+    let H_total = H_rect + H1 + H2;
+    let breakpoints = [0.0, H_rect, H_rect + H1, H_total];
+    let current_y = y0;
+    let total_boxes = 0;
+    let row_details = [];
+    let row_global_idx = 1;
+
+    for (let i = 0; i < patternBoxes.length; i++) {
+        let box = patternBoxes[i];
+        let k_rows = rowCounts[i];
+        if (k_rows <= 0) continue;
+        let l = box.l, h = box.h, name = box.name;
+
+        for (let j = 0; j < k_rows; j++) {
+            let y_bottom = current_y;
+            let y_top = current_y + h;
+
+            if (y_top > H_total + 1e-5) return { total: -1, details: [] };
+
+            let test_y = [y_bottom, y_top];
+            for (let bp of breakpoints) {
+                if (y_bottom < bp && bp < y_top) test_y.push(bp);
+            }
+
+            let min_width = Infinity;
+            for (let pt of test_y) {
+                let w = getSpaceWidth(pt, H_rect, W0, H1, W1, H2, W2);
+                if (w < min_width) min_width = w;
+            }
+
+            let boxes_in_row = Math.floor(min_width / l);
+            total_boxes += boxes_in_row;
+            row_details.push({
+                row: row_global_idx,
+                y_range: `${y_bottom.toFixed(2)} ~ ${y_top.toFixed(2)}`,
+                box_type: name,
+                min_width: min_width.toFixed(2),
+                boxes: boxes_in_row
+            });
+
+            current_y = y_top;
+            row_global_idx++;
+        }
+    }
+    return { total: total_boxes, details: row_details };
+}
+
+function calculateTab2() {
+    let H_rect = parseFloat(document.getElementById('t2_H_rect').value);
+    let W0 = parseFloat(document.getElementById('t2_W0').value);
+    let H1 = parseFloat(document.getElementById('t2_H1').value);
+    let W1 = parseFloat(document.getElementById('t2_W1').value);
+    let H2 = parseFloat(document.getElementById('t2_H2').value);
+    let W2 = parseFloat(document.getElementById('t2_W2').value);
+
+    let box1 = { l: parseFloat(document.getElementById('t2_box1_l').value), h: parseFloat(document.getElementById('t2_box1_h').value), name: '箱子 1' };
+    let box2 = { l: parseFloat(document.getElementById('t2_box2_l').value), h: parseFloat(document.getElementById('t2_box2_h').value), name: '箱子 2' };
+
+    if ([H_rect, W0, H1, W1, H2, W2, box1.l, box1.h, box2.l, box2.h].some(isNaN)) {
+        alert("请填写所有有效的数字参数！");
+        return;
+    }
+
+    let H_total = H_rect + H1 + H2;
+    let breakpoints = [0.0, H_rect, H_rect + H1, H_total];
+    let patterns = [
+        { boxes: [box1], n: 1 },
+        { boxes: [box2], n: 1 },
+        { boxes: [box1, box2], n: 2 },
+        { boxes: [box2, box1], n: 2 },
+        { boxes: [box1, box2, box1], n: 3 },
+        { boxes: [box2, box1, box2], n: 3 }
+    ];
+
+    let best_total = -1;
+    let best_config = null;
+    let min_h = Math.min(box1.h, box2.h);
+    let candidate_y0 = new Set([0.0]);
+    for (let bp of breakpoints) candidate_y0.add(bp % min_h);
+    for (let i = 0; i < 30; i++) candidate_y0.add((i / 30.0) * min_h);
+
+    let max_total_rows = Math.floor(H_total / min_h) + 2;
+
+    for (let y0 of candidate_y0) {
+        for (let pat of patterns) {
+            let boxes = pat.boxes;
+            let n = pat.n;
+
+            if (n === 1) {
+                for (let k1 = 1; k1 < max_total_rows; k1++) {
+                    let res = evaluateBlockSequence(y0, boxes, [k1], H_rect, W0, H1, W1, H2, W2);
+                    if (res.total > best_total) {
+                        best_total = res.total;
+                        best_config = { y0, boxes, rowCounts: [k1], details: res.details };
+                    }
+                }
+            } else if (n === 2) {
+                for (let k1 = 1; k1 < max_total_rows; k1++) {
+                    for (let k2 = 1; k2 < max_total_rows; k2++) {
+                        let res = evaluateBlockSequence(y0, boxes, [k1, k2], H_rect, W0, H1, W1, H2, W2);
+                        if (res.total > best_total) {
+                            best_total = res.total;
+                            best_config = { y0, boxes, rowCounts: [k1, k2], details: res.details };
+                        }
+                    }
+                }
+            } else if (n === 3) {
+                for (let k1 = 1; k1 < max_total_rows; k1++) {
+                    for (let k2 = 1; k2 < max_total_rows; k2++) {
+                        for (let k3 = 1; k3 < max_total_rows; k3++) {
+                            let res = evaluateBlockSequence(y0, boxes, [k1, k2, k3], H_rect, W0, H1, W1, H2, W2);
+                            if (res.total > best_total) {
+                                best_total = res.total;
+                                best_config = { y0, boxes, rowCounts: [k1, k2, k3], details: res.details };
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (best_total === -1 || !best_config) {
+        alert("未找到符合条件的排布方案，请检查箱子高度和总空间高度！");
+        return;
+    }
+
+    document.getElementById('t2_resTotal').innerText = best_total;
+    document.getElementById('t2_resY0').innerText = best_config.y0.toFixed(4);
+    let patternDesc = best_config.boxes.map((b, idx) => `${b.name} (${best_config.rowCounts[idx]}行)`).join(' &rarr; ');
+    document.getElementById('t2_resPattern').innerHTML = patternDesc;
+
+    let tbody = document.getElementById('t2_tbody');
+    tbody.innerHTML = '';
+    for (let d of best_config.details) {
+        let tr = document.createElement('tr');
+        tr.innerHTML = `<td>${d.row}</td><td>${d.y_range}</td><td>${d.box_type}</td><td>${d.min_width}</td><td><strong>${d.boxes}</strong></td>`;
+        tbody.appendChild(tr);
+    }
+    document.getElementById('t2_resultBox').style.display = 'block';
+}
+</script>
+
+</body>
+</html>
